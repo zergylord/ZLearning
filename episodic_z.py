@@ -22,6 +22,14 @@ Theta[-1,-1] = 1.0
 for i in np.nonzero(term)[0]:
     Theta[i,:] = 0
     Theta[i,-1] = 1.0
+NN = Theta[:-1,:-1]
+NT = Theta[:-1,-1]
+print(NN.shape,NT.shape)
+M = np.diag(np.exp(R[:-1]))
+A = np.eye(n_mem)-np.matmul(M,NN)
+b = np.matmul(M,np.expand_dims(NT,-1))*np.exp(R[-1])
+print(A.shape,b.shape)
+foo = np.linalg.solve(A,b)
 Z = np.ones([n_mem+1,1])
 old_Z = Z.copy()
 for i in range(1000):
@@ -29,13 +37,21 @@ for i in range(1000):
     diff = np.sum(np.abs(Z-old_Z))
     old_Z = Z.copy()
     print(i,diff)
-    if diff < 1:
+    if diff == 0.0:
         break
-val,vec = np.linalg.eig(np.matmul(np.diag(np.exp(R)),Theta))
-print(val)
-#Z = vec[val==1.0]
+#val,vec = np.linalg.eig(np.matmul(np.diag(np.exp(R)),Theta))
+#print(val)
+#print(Z)
 #plt.ion()
-plt.clf()
+print(np.sum(np.abs(foo[:,0]-Z[:-1,0])))
+plt.subplot(1,3,1)
+plt.scatter(SPrime[:,0],SPrime[:,1],c=np.log(foo[:,0]))
+plt.colorbar()
+plt.subplot(1,3,2)
 plt.scatter(SPrime[:,0],SPrime[:,1],c=np.log(Z[:-1,0]))
+plt.colorbar()
+plt.subplot(1,3,3)
+plt.scatter(SPrime[:,0],SPrime[:,1],c=(foo[:,0]-Z[:-1,0]))
+plt.colorbar()
 #plt.pause(.01)
 plt.show()
