@@ -7,11 +7,16 @@ def z_iteration(Theta,R,Z):
 def sample_passive():
     return np.random.randn(2)*.01
 env = ContGrid()
+'''
+use_rp = True
+b = 1e-1
+'''
+use_rp = False
+b = 1e-2
 s_dim = 2
 a_dim = 2
 RP = np.random.randn(s_dim,100)
 oracle_id = False
-b = .01
 n_mem = 1000
 S = np.zeros([n_mem,s_dim])
 A = np.zeros([n_mem,a_dim])
@@ -25,7 +30,10 @@ for i in range(n_mem):
     SPrime[i,:],R[i],term[i],_ = env.get_transition(S[i,:],A[i,:])
 n_term = term.sum()
 Theta = np.zeros([n_mem,n_mem+n_term])
-Theta[:,:-n_term] = rbf(SPrime,S,b)
+if use_rp:
+    Theta[:,:-n_term] = rbf(np.matmul(SPrime,RP),np.matmul(S,RP),b)
+else:
+    Theta[:,:-n_term] = rbf(SPrime,S,b)
 term_R = np.zeros([n_term,1])
 for i,ind in enumerate(np.nonzero(term)[0]):
     Theta[ind,:] = 0
@@ -46,7 +54,10 @@ s = np.asarray([.9,.9])#env.observation_space.sample()
 plt.ion()
 for i in range(1000):
     #P(s'|s)
-    theta = rbf(np.expand_dims(s,0),S,b)
+    if use_rp:
+        theta = rbf(np.matmul(np.expand_dims(s,0),RP),np.matmul(S,RP),b)
+    else:
+        theta = rbf(np.expand_dims(s,0),S,b)
     part = np.dot(theta[0],Z[:,0])
     control = theta[0]*Z[:,0]/part
     if i % 10 == 0:
@@ -67,5 +78,8 @@ for i in range(1000):
         sPrime,r,term,_ = env.get_transition(s,a)
         #print(s,a,sPrime)
         s = sPrime.copy()
+    if r == 0.0:
+        print(i)
+        break
 
 #sPrime,r,term,_ = env.get_transition(s,a)
