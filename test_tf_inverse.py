@@ -8,7 +8,7 @@ env = gym.make("Pendulum-v0")
 x_dim = env.observation_space.shape[0]
 hid_dim = 100
 z_dim = 3
-n_i = 1000
+n_i = 100
 a_dim = env.action_space.shape[0]
 bandwidth = 0.1
 def encode(inp,reuse=None):
@@ -42,6 +42,7 @@ saver = tf.train.Saver()
 
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
+saver.restore(sess,'foo')
 
 n_replay = int(1e5)
 X_replay = np.zeros([n_replay,x_dim])
@@ -60,7 +61,7 @@ print('... done generating')
 
 n_steps = int(1e6)
 refresh = int(1e3)
-mb_dim = 32
+mb_dim = 100
 def sample_mb():
     n_sample = mb_dim*(n_i+1)
     inds = np.random.choice(n_replay,size=n_sample,replace=False)
@@ -74,22 +75,13 @@ def sample_mb():
 
 
 cum_loss = 0
-for i in range(n_steps):
-    X_i,A_i,XPrime_i,X,A,XPrime = sample_mb()
-    _,cur_loss,pred = sess.run([train_op,loss,a_hat],
-            feed_dict={xPrime:XPrime,x:X,xPrime_i:XPrime_i,x_i:X_i,a:A,a_i:A_i})
-    cum_loss += cur_loss
-    if (i+1) % refresh == 0:
-        A_rand = np.zeros([mb_dim,a_dim])
-        for j in range(mb_dim):
-            A_rand[j] = env.action_space.sample()
-        percent_perfect = sess.run(perfect,
-                feed_dict={a_rand:A_rand,xPrime:XPrime,x:X,xPrime_i:XPrime_i,x_i:X_i,a:A,a_i:A_i})
-        #print(np.concatenate([pred[:10],A[:10]],-1))
-        print(i+1,time.clock()-cur_time,cum_loss/refresh,percent_perfect)
-        cur_time = time.clock()
-        cum_loss = 0
-        saver.save(sess,'foo')
+X_i,A_i,XPrime_i,X,A,XPrime = sample_mb()
+A_rand = np.zeros([mb_dim,a_dim])
+for j in range(mb_dim):
+    A_rand[j] = env.action_space.sample()
+percent_perfect = sess.run(perfect,
+        feed_dict={a_rand:A_rand,xPrime:XPrime,x:X,xPrime_i:XPrime_i,x_i:X_i,a:A,a_i:A_i})
+print(percent_perfect)
 
 
 

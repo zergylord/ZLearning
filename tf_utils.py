@@ -1,4 +1,3 @@
-import numpy as np
 import tensorflow as tf
 def softmax(X):
     X = tf.exp(X - tf.reduce_max(X,-1,keep_dims=True))

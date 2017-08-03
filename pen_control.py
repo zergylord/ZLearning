@@ -3,6 +3,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import numpy as np
 import gym
+viz = False
 env = gym.make("Pendulum-v0")
 seed = 1337
 env._seed(1337)
@@ -61,10 +62,11 @@ LHS = np.eye(n_mem)-np.matmul(M,NN)
 RHS = np.matmul(np.matmul(M,NT),np.exp(term_R))
 Z = np.linalg.solve(LHS,RHS)
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(SPrime[:,0],SPrime[:,1],SPrime[:,2],c=np.log(Z[:,0]))
-plt.show()
+if viz:
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(SPrime[:,0],SPrime[:,1],SPrime[:,2],c=np.log(Z[:,0]))
+    plt.show()
 
 s = env.reset()
 cumr = 0
@@ -77,24 +79,16 @@ for i in range(1000):
         theta = rbf(np.expand_dims(s,0),S,b)
     part = np.dot(theta[0],Z[:,0])
     control = theta[0]*Z[:,0]/part
-    '''
-    if i % 10 == 0:
-        plt.clf()
-        plt.scatter(SPrime[:,0],SPrime[:,1],c=control)
-        plt.colorbar()
-        #plt.show()
-        plt.pause(.001)
-    '''
     ind = np.random.choice(n_mem,p=control)
-    id_theta = rbf(np.matmul(SPrime,RP)-np.matmul(np.expand_dims(s,0),RP),
+    id_theta = rbf(np.expand_dims(np.matmul(SPrime[ind],RP)-np.matmul(s,RP),0),
             np.matmul(SPrime,RP)-np.matmul(S,RP),b)
-    pred_A = np.matmul(id_theta,A)
-    a = pred_A[ind]
+    a = np.matmul(id_theta,A)[0]
     #a = env.action_space.sample()
     sPrime,r,term,_ = env.step(a)
     term = r > -1.0
     cumr+=term
     cum_cost+=r
     s = sPrime
-    env.render()
+    if viz:
+        env.render()
 print(r,cum_cost,cumr)
