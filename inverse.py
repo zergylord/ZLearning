@@ -10,7 +10,7 @@ else:
     M = np.random.randn(s_dim,2)
 a_dim = 2
 b = 1e-4
-n_mem = 1000
+n_mem = 100
 S = np.zeros([2,n_mem,s_dim])
 A = np.zeros([2,n_mem,a_dim])
 R = np.zeros([2,n_mem])
