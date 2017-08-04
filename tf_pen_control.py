@@ -6,11 +6,14 @@ import numpy as np
 import tensorflow as tf
 import gym
 import time
+viz = True
 env = gym.make("Pendulum-v0")
+'''
 seed = 1337
 env._seed(1337)
 np.random.seed(seed)
-#env = gym.make('MountainCarContinuous-v0')
+'''
+env = gym.make('MountainCarContinuous-v0')
 '''
 use_rp = True
 b = 1e-1
@@ -18,11 +21,13 @@ b = 1e-1
 use_tf = True
 use_rp = False
 b = 1e-2
+cutoff = -1.0
+shaping = False
 print(env.observation_space.shape,env.action_space.shape)
 s_dim = env.observation_space.shape[0]
 a_dim = env.action_space.shape[0]
 RP = np.random.randn(s_dim,100)
-n_mem = 1000
+n_mem = 2000
 S = np.zeros([n_mem,s_dim])
 A = np.zeros([n_mem,a_dim])
 R = np.zeros([n_mem])
@@ -40,7 +45,9 @@ for i in range(n_mem):
         A[i,:] = env.action_space.low[0]
     '''
     SPrime[i,:],R[i],term[i],_ = env.step(A[i,:])
-    term[i] = R[i] > -1.0
+    term[i] = R[i] > cutoff
+    if not shaping:
+        R[i] = -10.0
     if False or term[i]:
         print('yay!')
         s = env.reset()
@@ -65,16 +72,15 @@ LHS = np.eye(n_mem)-np.matmul(M,NN)
 RHS = np.matmul(np.matmul(M,NT),np.exp(term_R))
 Z = np.linalg.solve(LHS,RHS)
 
-'''
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(SPrime[:,0],SPrime[:,1],SPrime[:,2],c=np.log(Z[:,0]))
-plt.show()
-'''
+if False and viz:
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(SPrime[:,0],SPrime[:,1],SPrime[:,2],c=np.log(Z[:,0]))
+    plt.show()
 
 print('loading id model...')
 hid_dim = 100
-z_dim = 3
+z_dim = 100
 bandwidth = 0.1
 n_i = n_mem
 def encode(inp,reuse=None):
@@ -108,7 +114,7 @@ saver = tf.train.Saver()
 
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
-saver.restore(sess,'foo')
+saver.restore(sess,'bar')
 print('loading complete!')
 
 cur_time = time.clock()
@@ -136,9 +142,13 @@ for i in range(1000):
                     a_i:np.expand_dims(A,0)})[0]
     #a = env.action_space.sample()
     sPrime,r,term,_ = env.step(a)
-    term = r > -1.0
+    term = r > cutoff
     cumr+=term
     cum_cost+=r
-    s = sPrime
-    #env.render()
+    if False and term:
+        s = env.reset()
+    else:
+        s = sPrime
+    if viz:
+        env.render()
 print(time.clock()-cur_time,r,cum_cost,cumr)

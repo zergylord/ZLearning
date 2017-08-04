@@ -5,9 +5,10 @@ import gym
 import time
 cur_time = time.clock()
 env = gym.make("Pendulum-v0")
+env = gym.make('MountainCarContinuous-v0')
 x_dim = env.observation_space.shape[0]
 hid_dim = 100
-z_dim = 3
+z_dim = 100
 n_i = 1000
 a_dim = env.action_space.shape[0]
 bandwidth = 0.1
@@ -47,17 +48,19 @@ n_replay = int(1e5)
 X_replay = np.zeros([n_replay,x_dim])
 A_replay = np.zeros([n_replay,a_dim])
 XPrime_replay = np.zeros([n_replay,x_dim])
-s = env.reset()
-print('generating samples...')
-for i in range(n_replay):
-    if i > 0:
-        X_replay[i,:] = XPrime_replay[i-1,:]
-    else:
-        X_replay[i,:] = s
-    A_replay[i,:] = env.action_space.sample()
-    XPrime_replay[i,:],_,_,_ = env.step(A_replay[i,:])
-print('... done generating')
-
+def gen_data():
+    global X_replay,A_replay,XPrime_replay
+    s = env.reset()
+    print('generating samples...')
+    for i in range(n_replay):
+        if i > 0:
+            X_replay[i,:] = XPrime_replay[i-1,:]
+        else:
+            X_replay[i,:] = s
+        A_replay[i,:] = env.action_space.sample()
+        XPrime_replay[i,:],_,_,_ = env.step(A_replay[i,:])
+    print('... done generating')
+gen_data()
 n_steps = int(1e6)
 refresh = int(1e3)
 mb_dim = 32
@@ -80,6 +83,7 @@ for i in range(n_steps):
             feed_dict={xPrime:XPrime,x:X,xPrime_i:XPrime_i,x_i:X_i,a:A,a_i:A_i})
     cum_loss += cur_loss
     if (i+1) % refresh == 0:
+        gen_data()
         A_rand = np.zeros([mb_dim,a_dim])
         for j in range(mb_dim):
             A_rand[j] = env.action_space.sample()
@@ -89,7 +93,7 @@ for i in range(n_steps):
         print(i+1,time.clock()-cur_time,cum_loss/refresh,percent_perfect)
         cur_time = time.clock()
         cum_loss = 0
-        saver.save(sess,'foo')
+        saver.save(sess,'bar')
 
 
 
