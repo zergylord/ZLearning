@@ -13,7 +13,7 @@ seed = 1337
 env._seed(1337)
 np.random.seed(seed)
 '''
-env = gym.make('MountainCarContinuous-v0')
+#env = gym.make('MountainCarContinuous-v0')
 '''
 use_rp = True
 b = 1e-1

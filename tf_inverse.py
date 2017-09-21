@@ -5,7 +5,7 @@ import gym
 import time
 cur_time = time.clock()
 env = gym.make("Pendulum-v0")
-env = gym.make('MountainCarContinuous-v0')
+#env = gym.make('MountainCarContinuous-v0')
 x_dim = env.observation_space.shape[0]
 hid_dim = 100
 z_dim = 100
